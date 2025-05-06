@@ -46,4 +46,17 @@ RSpec.describe Prawn::Attachment do
       end
     end.to raise_error(Prawn::Attachment::InvalidDataError)
   end
+  
+  it "adds AF references" do
+    pdf = Prawn::Document.new do
+      text "Hello Spec!"
+      attach "data.json", File.open("./example/data.json")
+    end
+    
+    output = pdf.render
+    
+    expect(output).to match /\/AF 9 0 R/
+    expect(output).to match /9 0 obj\n\[8 0 R\]\nendobj/
+    expect(output).to match /8 0 obj\n<< \/Type \/Filespec/
+  end
 end
