@@ -54,9 +54,13 @@ module Prawn
 
       # Prepare embeddable representation of the source data
       file = EmbeddedFile.new(data, opts)
-
-      filespec = Filespec.new(file_obj_from_registry(file), opts)
+      
+      file_object, file_is_cached = file_obj_from_registry(file)
+      
+      filespec = Filespec.new(file_object, opts)
       filespec_obj = filespec.build_pdf_object(self)
+      
+      add_to_af_list(filespec_obj) unless file_is_cached
 
       attach_file(filespec.file_name, filespec_obj) unless filespec.hidden?
     end
@@ -92,15 +96,20 @@ module Prawn
     # registry, just in case the same file is attached twice with different names.
     def file_obj_from_registry(file)
       file_obj = file_registry[file.checksum]
-      return file_obj if file_obj
+      return file_obj, true if file_obj
 
       file_obj = file.build_pdf_object(self)
       file_registry[file.checksum] = file_obj
-      file_obj
+      return file_obj, false
     end
 
     def file_registry
       @file_registry ||= {}
+    end
+    
+    def add_to_af_list(filespec_obj)
+      state.store.root.data[:AF] ||= ref!([])
+      state.store.root.data[:AF].data << filespec_obj
     end
   end
 end
